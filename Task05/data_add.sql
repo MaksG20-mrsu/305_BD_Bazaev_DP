@@ -1,52 +1,84 @@
 PRAGMA foreign_keys = ON;
 
+-- ============================================================
 -- 1. Добавляем 5 новых пользователей (дата регистрации = системное время)
--- ЗАМЕНИ имена и email на свои и своих 4 соседей по группе!
--- Мы используем SELECT, чтобы динамически найти occupation_id для 'student'
-INSERT INTO users (name, email, gender, register_date, occupation_id) 
-SELECT 'Базаев Даниил', 'bazaev@student.mrsu.ru', 'male', datetime('now'), id FROM occupations WHERE name = 'student' LIMIT 1;
+-- ============================================================
+INSERT INTO users (name, email, gender)
+SELECT 'Базаев Даниил', 'bazaev.damill2006@gmail.com', 'male'
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'bazaev.damill2006@gmail.com');
 
-INSERT INTO users (name, email, gender, register_date, occupation_id) 
-SELECT 'Иванов Иван', 'ivanov@student.mrsu.ru', 'male', datetime('now'), id FROM occupations WHERE name = 'student' LIMIT 1;
+-- Сосед 1 по списку группы
+INSERT INTO users (name, email, gender)
+SELECT 'Иванов Иван', 'ivanov@gmail.com', 'male'
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'ivanov@gmail.com');
 
-INSERT INTO users (name, email, gender, register_date, occupation_id) 
-SELECT 'Петрова Анна', 'petrova@student.mrsu.ru', 'female', datetime('now'), id FROM occupations WHERE name = 'student' LIMIT 1;
+-- Сосед 2 по списку группы
+INSERT INTO users (name, email, gender)
+SELECT 'Петрова Анна', 'petrova@yandex.ru', 'female'
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'ppetrova@yandex.ru');
 
-INSERT INTO users (name, email, gender, register_date, occupation_id) 
-SELECT 'Сидоров Алексей', 'sidorov@student.mrsu.ru', 'male', datetime('now'), id FROM occupations WHERE name = 'student' LIMIT 1;
+-- Сосед 3 по списку группы
+INSERT INTO users (name, email, gender)
+SELECT 'Сидоров Алексей', 'sidorov@yandex.ru', 'male'
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'sidorov@yandex.ru');
 
-INSERT INTO users (name, email, gender, register_date, occupation_id) 
-SELECT 'Смирнова Елена', 'smirnova@student.mrsu.ru', 'female', datetime('now'), id FROM occupations WHERE name = 'student' LIMIT 1;
+-- Сосед 4 по списку группы
+INSERT INTO users (name, email, gender)
+SELECT 'Смирнова Елена', 'smirnova@yandex.ru', 'female'
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'smirnova@yandex.ru');
 
+-- ============================================================
 -- 2. Добавляем 3 новых фильма разных жанров
-INSERT INTO movies (title, year) VALUES 
-('Лабораторная работа 5: Документальный', 2024),
-('Приключения Git и GitHub', 2023),
-('Тайны реляционных баз данных', 2022);
+-- ============================================================
+INSERT INTO movies (title, year)
+SELECT 'Реляционные тайны: 3NF', 2024
+WHERE NOT EXISTS (SELECT 1 FROM movies WHERE title = 'Реляционные тайны: 3NF');
 
--- Связываем фильмы с жанрами (динамически находим ID по названию фильма и жанра)
-INSERT INTO movie_genres (movie_id, genre_id) 
-SELECT m.id, g.id FROM movies m, genres g WHERE m.title = 'Лабораторная работа 5: Документальный' AND g.name = 'Documentary';
+INSERT INTO movies (title, year)
+SELECT 'Приключения SQL-запроса', 2023
+WHERE NOT EXISTS (SELECT 1 FROM movies WHERE title = 'Приключения SQL-запроса');
 
-INSERT INTO movie_genres (movie_id, genre_id) 
-SELECT m.id, g.id FROM movies m, genres g WHERE m.title = 'Приключения Git и GitHub' AND g.name = 'Action';
+INSERT INTO movies (title, year)
+SELECT 'Документалка про SQLite', 2022
+WHERE NOT EXISTS (SELECT 1 FROM movies WHERE title = 'Документалка про SQLite');
 
-INSERT INTO movie_genres (movie_id, genre_id) 
-SELECT m.id, g.id FROM movies m, genres g WHERE m.title = 'Тайны реляционных баз данных' AND g.name = 'Mystery';
+-- Связываем фильмы с жанрами (динамически находим ID по имени)
+INSERT INTO movie_genres (movie_id, genre_id)
+SELECT m.id, g.id FROM movies m, genres g
+WHERE m.title = 'Реляционные тайны: 3NF' AND g.name = 'Sci-Fi'
+  AND NOT EXISTS (SELECT 1 FROM movie_genres WHERE movie_id = m.id AND genre_id = g.id);
 
--- 3. Добавляем 3 отзыва от себя 
--- (динамически находим свой user_id по email, а movie_id по названию фильма)
+INSERT INTO movie_genres (movie_id, genre_id)
+SELECT m.id, g.id FROM movies m, genres g
+WHERE m.title = 'Приключения SQL-запроса' AND g.name = 'Adventure'
+  AND NOT EXISTS (SELECT 1 FROM movie_genres WHERE movie_id = m.id AND genre_id = g.id);
+
+INSERT INTO movie_genres (movie_id, genre_id)
+SELECT m.id, g.id FROM movies m, genres g
+WHERE m.title = 'Документалка про SQLite' AND g.name = 'Documentary'
+  AND NOT EXISTS (SELECT 1 FROM movie_genres WHERE movie_id = m.id AND genre_id = g.id);
+
+-- ============================================================
+-- 3. Три отзыва от меня (Базеева) на добавленные фильмы
+-- Запросы не зависят от конкретных ID
+-- ============================================================
 INSERT INTO ratings (user_id, movie_id, rating, timestamp)
 SELECT u.id, m.id, 5.0, strftime('%s', 'now')
 FROM users u, movies m
-WHERE u.email = 'bazaev@student.mrsu.ru' AND m.title = 'Лабораторная работа 5: Документальный';
+WHERE u.email = 'bazaev.damill2006@gmail.com'
+  AND m.title = 'Реляционные тайны: 3NF'
+  AND NOT EXISTS (SELECT 1 FROM ratings WHERE user_id = u.id AND movie_id = m.id);
 
 INSERT INTO ratings (user_id, movie_id, rating, timestamp)
 SELECT u.id, m.id, 4.5, strftime('%s', 'now')
 FROM users u, movies m
-WHERE u.email = 'bazaev@student.mrsu.ru' AND m.title = 'Приключения Git и GitHub';
+WHERE u.email = 'bazaev.damill2006@gmail.com'
+  AND m.title = 'Приключения SQL-запроса'
+  AND NOT EXISTS (SELECT 1 FROM ratings WHERE user_id = u.id AND movie_id = m.id);
 
 INSERT INTO ratings (user_id, movie_id, rating, timestamp)
 SELECT u.id, m.id, 5.0, strftime('%s', 'now')
 FROM users u, movies m
-WHERE u.email = 'bazaev@student.mrsu.ru' AND m.title = 'Тайны реляционных баз данных';
+WHERE u.email = 'bazaev.damill2006@gmail.com'
+  AND m.title = 'Документалка про SQLite'
+  AND NOT EXISTS (SELECT 1 FROM ratings WHERE user_id = u.id AND movie_id = m.id);
